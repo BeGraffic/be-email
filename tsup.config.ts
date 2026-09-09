@@ -1,7 +1,7 @@
-import { defineConfig } from "tsup";
+import { defineConfig, type Options } from "tsup";
 
-const shared = {
-  format: ["esm"] as const,
+const shared: Options = {
+  format: ["esm"],
   dts: true,
   splitting: false,
   sourcemap: true,
