@@ -2,7 +2,16 @@
    @begraffic/email/editor · controls.tsx
    Form-control primitives used across the property panel
    ============================================================ */
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type FocusEvent, type ReactNode } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type FocusEvent,
+  type KeyboardEventHandler,
+  type ReactNode,
+} from "react";
 import { C } from "./constants";
 import { UI } from "./theme";
 import { clampNum } from "./defaults";
@@ -58,18 +67,25 @@ const stepBtn: CSSProperties = {
 
 export function Field({
   label,
+  htmlFor,
   children,
   hint,
   style,
 }: {
   label?: string;
+  /** Id del control al que etiqueta. Opcional: sin él el <label> es decorativo. */
+  htmlFor?: string;
   children: ReactNode;
   hint?: string;
   style?: CSSProperties;
 }) {
   return (
     <div style={{ marginBottom: 16, minWidth: 0, ...style }}>
-      {label && <label style={fieldLabel}>{label}</label>}
+      {label && (
+        <label htmlFor={htmlFor} style={fieldLabel}>
+          {label}
+        </label>
+      )}
       {children}
       {hint && <div style={{ fontSize: 11, color: UI.textSubtle, marginTop: 5 }}>{hint}</div>}
     </div>
@@ -82,15 +98,28 @@ export function TextInput({
   placeholder,
   mono,
   style,
+  id,
+  type = "text",
+  autoFocus,
+  onKeyDown,
 }: {
   value?: string;
   onChange: (v: string) => void;
   placeholder?: string;
   mono?: boolean;
   style?: CSSProperties;
+  /** Para asociarlo a un <label htmlFor> (ver `Field`). */
+  id?: string;
+  type?: "text" | "url" | "email" | "tel";
+  autoFocus?: boolean;
+  onKeyDown?: KeyboardEventHandler<HTMLInputElement>;
 }) {
   return (
     <input
+      id={id}
+      type={type}
+      autoFocus={autoFocus}
+      onKeyDown={onKeyDown}
       value={value ?? ""}
       placeholder={placeholder}
       onChange={(e) => onChange(e.target.value)}

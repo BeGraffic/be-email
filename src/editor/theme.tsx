@@ -30,6 +30,7 @@ export const UI = {
   text: "var(--text-primary, #171717)",
   textMuted: "var(--text-secondary, #525252)",
   textSubtle: "var(--text-tertiary, #737373)",
+  textPlaceholder: "var(--text-placeholder, #a1a1a1)",
   accent: "var(--ee-accent, #1e4876)",
   accentText: "#ffffff",
   accentSoft: "var(--ee-accent-soft, #f2f7fc)",
