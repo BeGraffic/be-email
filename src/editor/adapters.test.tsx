@@ -21,11 +21,16 @@ describe("frontera del editor", () => {
     for (const expected of ["EmailEditor.tsx", "modals.tsx", "theme.tsx", "Canvas.tsx", "Sidebar.tsx"]) {
       expect(files).toContain(expected);
     }
-    expect(files.length).toBeGreaterThanOrEqual(20);
+    // 21 ficheros a día de hoy. El umbral es deliberadamente bajo: solo debe
+    // atrapar un escáner que se quedó ciego (0 o casi 0 resultados), no
+    // romperse cada vez que se añade o se quita un fichero del editor — con
+    // 20 (margen de 1 sobre 21) cualquier limpieza de dos ficheros tumbaba
+    // este test sin que el escáner tuviera ningún problema real.
+    expect(files.length).toBeGreaterThanOrEqual(10);
   });
 
   it("no importa nada del CRM por alias", () => {
-    const culpables = sources.filter((s) => /from "@\//.test(s.code)).map((s) => s.file);
+    const culpables = sources.filter((s) => /from ["']@\//.test(s.code)).map((s) => s.file);
     expect(culpables).toEqual([]);
   });
 
@@ -35,7 +40,7 @@ describe("frontera del editor", () => {
   });
 
   it("no importa Firebase", () => {
-    const culpables = sources.filter((s) => /from "firebase\//.test(s.code)).map((s) => s.file);
+    const culpables = sources.filter((s) => /from ["']firebase\//.test(s.code)).map((s) => s.file);
     expect(culpables).toEqual([]);
   });
 

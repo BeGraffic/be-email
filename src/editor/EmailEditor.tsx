@@ -215,6 +215,12 @@ export const EmailEditor = forwardRef<EmailEditorHandle, EmailEditorProps>(funct
 
   const onReadyRef = useRef(onReady);
   onReadyRef.current = onReady;
+  // `renderHtml` viene del anfitrión: si se pasa inline (`renderHtml={(d) => ...}`,
+  // el patrón natural), tiene identidad nueva en cada render del anfitrión. Se
+  // guarda en una ref (mismo patrón que `onReadyRef`) para que el efecto de abajo
+  // y el `useImperativeHandle` de más adelante no dependan de esa identidad.
+  const renderHtmlRef = useRef(renderHtml);
+  renderHtmlRef.current = renderHtml;
   useEffect(() => {
     onReadyRef.current?.();
   }, []);
@@ -1081,12 +1087,14 @@ export const EmailEditor = forwardRef<EmailEditorHandle, EmailEditorProps>(funct
       getDesign: () => serializeDesign(docRef.current.g, docRef.current.rows),
       exportHtml: async () => {
         const design = serializeDesign(docRef.current.g, docRef.current.rows);
-        const html = await renderHtml(design);
+        const html = await renderHtmlRef.current(design);
         return { design, html };
       },
     }),
-    // `renderHtml` viene del anfitrión: si cambia, el handle debe usar el nuevo.
-    [renderHtml],
+    // Sin `renderHtml` en las deps: se lee de `renderHtmlRef` (ver arriba), así
+    // que una identidad nueva en cada render del anfitrión ya no recrea el
+    // handle imperativo en cada re-render.
+    [],
   );
 
   const { g, rows } = doc;

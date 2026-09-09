@@ -65,17 +65,28 @@ export function PreviewModal({
   // dispara las @media reales del correo → el responsive se ve tal cual se enviará.
   const [html, setHtml] = useState<string | null>(null);
   const [loadErr, setLoadErr] = useState<string | null>(null);
+  // `renderHtml` es una prop del anfitrión, no necesariamente memoizada (el
+  // patrón natural es pasarla inline: `renderHtml={(d) => renderViaApi(d)}`,
+  // con identidad nueva en cada render del anfitrión). Se guarda en una ref
+  // (mismo patrón que `onReadyRef` en EmailEditor.tsx) para que el efecto de
+  // abajo dependa del CONTENIDO a previsualizar (`g`, `rows`), no de esa
+  // identidad — si no, cualquier re-render del anfitrión con la vista previa
+  // abierta borraba el preview a su estado de carga y volvía a pedirle el
+  // render al servidor.
+  const renderHtmlRef = useRef(renderHtml);
+  renderHtmlRef.current = renderHtml;
   useEffect(() => {
     let alive = true;
     setHtml(null);
     setLoadErr(null);
-    renderHtml(serializeDesign(g, rows))
+    renderHtmlRef
+      .current(serializeDesign(g, rows))
       .then((h) => alive && setHtml(h))
       .catch((e) => alive && setLoadErr(e instanceof Error ? e.message : "No se pudo generar la previsualización."));
     return () => {
       alive = false;
     };
-  }, [g, rows, renderHtml]);
+  }, [g, rows]);
   // Escritorio: NUNCA renderizar el preview a ≤600px (= el breakpoint móvil `@media(max-width:600px)`
   // del email). El ancho por defecto del email es 600, así que pasar `g.width` hacía que el iframe
   // quedara a 600 y disparara el apilado MÓVIL en el preview de escritorio (las columnas se veían
@@ -343,16 +354,27 @@ export function MediaModal({
   const [pexelsError, setPexelsError] = useState("");
 
 
+  // `listFiles` (= `loadLibrary` del anfitrión) sufre el mismo problema de
+  // identidad que `renderHtml` (ver EmailEditor.tsx/modals.tsx): si se pasa
+  // inline, cambia en cada re-render del anfitrión y, como este modal se queda
+  // MONTADO mientras está abierto, cualquier re-render ajeno (p.ej. el de
+  // "sin guardar" que dispara `onChange`) volvía a poner la biblioteca en
+  // carga y a re-pedirla al servidor. Se guarda en una ref (mismo patrón que
+  // `onReadyRef`) y el efecto pasa a depender solo del montaje: carga una vez
+  // al abrir el modal, con el `listFiles` vigente en ese momento.
+  const listFilesRef = useRef(listFiles);
+  listFilesRef.current = listFiles;
   // Carga la biblioteca del WORKSPACE desde el servidor (carpeta templates/<tableId>/...).
   // Reemplaza el caché localStorage global del navegador que filtraba entre workspaces.
   useEffect(() => {
-    if (!listFiles) {
+    const fn = listFilesRef.current;
+    if (!fn) {
       setLibLoading(false);
       return;
     }
     let cancelled = false;
     setLibLoading(true);
-    listFiles()
+    fn()
       .then((items) => {
         if (!cancelled) setLib(items);
       })
@@ -363,7 +385,7 @@ export function MediaModal({
     return () => {
       cancelled = true;
     };
-  }, [listFiles]);
+  }, []);
 
   const list = lib.filter((m) => m.name.toLowerCase().includes(q.toLowerCase()));
   const choose = (src: string, item?: MediaItem) => {
