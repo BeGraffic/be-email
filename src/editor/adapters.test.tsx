@@ -2,8 +2,10 @@
    @begraffic/email/editor · adapters.test.tsx
    Guardián de la frontera: el editor no puede saber nada de BeCRM. Falla si
    vuelve a aparecer un import por alias `@/`, un `fetch` a `/api`, un import
-   de Firebase o una variable CSS sin fallback (fuera del CRM esos tokens no
-   existen y el editor se vería sin colores).
+   de Firebase, una variable CSS sin fallback (fuera del CRM esos tokens no
+   existen y el editor se vería sin colores) o una lectura de `process.env`
+   (el anfitrión inyecta lo que necesite por props, nunca por convención de
+   variable de entorno — ver `appUrl` en `EmailPreviewFrame`/`EmailEditor`).
    ============================================================ */
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -34,6 +36,11 @@ describe("frontera del editor", () => {
 
   it("no importa Firebase", () => {
     const culpables = sources.filter((s) => /from "firebase\//.test(s.code)).map((s) => s.file);
+    expect(culpables).toEqual([]);
+  });
+
+  it("no lee process.env", () => {
+    const culpables = sources.filter((s) => /process\.env/.test(s.code)).map((s) => s.file);
     expect(culpables).toEqual([]);
   });
 

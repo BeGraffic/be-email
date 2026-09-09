@@ -2,32 +2,25 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-/** `process` solo existe si el anfitrión es un bundler que lo define (Next lo
- *  hace, e inlinea `process.env.NEXT_PUBLIC_*` en tiempo de build). Se declara
- *  a nivel de módulo para no arrastrar `@types/node` al paquete. */
-declare const process: { env: Record<string, string | undefined> } | undefined;
-
-/** URL canónica del anfitrión, si la publica. Fuera de un bundler que defina
- *  `process` (p. ej. un host que no sea Next) devuelve "" y el reescrito se
- *  omite: es una comodidad de desarrollo, no un requisito del editor.
- *  La expresión `process.env.NEXT_PUBLIC_APP_URL` se escribe literal a
- *  propósito — Next la sustituye por texto y cualquier variante (opcional,
- *  desestructurada) rompería esa sustitución. */
-function hostAppUrl(): string {
-  if (typeof process === "undefined" || !process.env) return "";
-  return (process.env.NEXT_PUBLIC_APP_URL || "").trim().replace(/\/$/, "");
-}
-
-/** When the editor is open on a LOCAL origin (dev / next start / LAN IP), rewrite
- *  any production app-URL in the rendered HTML to the current origin so hosted
- *  images (title-image, countdown, social icons, video poster) load in the
- *  preview. No-op in production (the canonical URL is correct there). */
-function rewriteLocalImageBase(html: string): string {
+/**
+ * When the editor is open on a LOCAL origin (dev / next start / LAN IP), rewrite
+ * any production app-URL in the rendered HTML to the current origin so hosted
+ * images (title-image, countdown, social icons, video poster) load in the
+ * preview. No-op in production (the canonical URL is correct there).
+ *
+ * `appUrl` is the host's own canonical URL — injected, never guessed from an
+ * env-var convention (the render engine already requires the same `baseUrl`
+ * explicitly; this mirrors that). When the host doesn't pass it, the rewrite
+ * is skipped: the preview keeps loading the production image URLs baked into
+ * the HTML (still visible, just not swapped to localhost) instead of pretending
+ * to know a URL nobody gave it.
+ */
+function rewriteLocalImageBase(html: string, appUrl: string | undefined): string {
   if (typeof window === "undefined") return html;
   const origin = window.location.origin;
   const isLocal = /^(https?:\/\/)(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\]|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|[a-z0-9-]+\.local)/i.test(origin);
   if (!isLocal) return html;
-  const prod = hostAppUrl();
+  const prod = (appUrl || "").trim().replace(/\/$/, "");
   if (!prod || prod === origin) return html;
   return html.split(prod).join(origin);
 }
@@ -49,6 +42,15 @@ type EmailPreviewFrameProps = {
   minHeight?: number;
   /** Classes for the outer wrapper (it owns the visible box). */
   className?: string;
+  /**
+   * URL canónica del anfitrión (p. ej. `https://app.ejemplo.com`), la misma
+   * que se le pasó al motor de render como `baseUrl`. Se usa SOLO para
+   * reescribir, en local, las imágenes de producción a `window.location.origin`
+   * (ver `rewriteLocalImageBase`). Si no se pasa, ese reescrito se omite sin
+   * más: la preview sigue mostrando las imágenes con su URL de producción, en
+   * vez de inventar un origen.
+   */
+  appUrl?: string;
 };
 
 /**
@@ -63,13 +65,14 @@ export function EmailPreviewFrame({
   renderWidth = 375,
   minHeight = 200,
   className,
+  appUrl,
 }: EmailPreviewFrameProps) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const innerObserverRef = useRef<ResizeObserver | null>(null);
   const [containerWidth, setContainerWidth] = useState(0);
   const [content, setContent] = useState<{ width: number; height: number } | null>(null);
-  const safeHtml = useMemo(() => rewriteLocalImageBase(html), [html]);
+  const safeHtml = useMemo(() => rewriteLocalImageBase(html, appUrl), [html, appUrl]);
 
   // Track the width the section actually gives us.
   useEffect(() => {

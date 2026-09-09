@@ -103,6 +103,13 @@ export type EmailEditorProps = {
   searchPhotos?: (query: string) => Promise<StockPhoto[]>;
   /** Control del tema. Si falta, no se muestra el selector. */
   theme?: ThemeController;
+  /**
+   * URL canónica del anfitrión (p. ej. `https://app.ejemplo.com`), la misma que
+   * se le pasa al motor de render como `baseUrl`. Solo la usa la previsualización
+   * (`EmailPreviewFrame`) para, en local, reescribir imágenes de producción al
+   * origen actual. Si falta, ese reescrito simplemente se omite.
+   */
+  appUrl?: string;
   /** Se dispara una vez montado el editor (el handle imperativo ya está listo). */
   onReady?: () => void;
 };
@@ -121,7 +128,7 @@ const newColumnData = (width: number): Column => ({
 });
 
 export const EmailEditor = forwardRef<EmailEditorHandle, EmailEditorProps>(function EmailEditor(
-  { initialDesign, renderHtml, onChange, uploadImage, deleteImage, loadLibrary, searchPhotos, theme, onReady },
+  { initialDesign, renderHtml, onChange, uploadImage, deleteImage, loadLibrary, searchPhotos, theme, appUrl, onReady },
   ref,
 ) {
   const init = deserializeDesign(initialDesign);
@@ -1216,7 +1223,7 @@ export const EmailEditor = forwardRef<EmailEditorHandle, EmailEditorProps>(funct
       </div>
 
       {modal === "preview" && (
-        <PreviewModal rows={rows} g={g} renderHtml={renderHtml} onClose={() => setModal(null)} />
+        <PreviewModal rows={rows} g={g} renderHtml={renderHtml} appUrl={appUrl} onClose={() => setModal(null)} />
       )}
       {modal === "media" && (
         <MediaModal

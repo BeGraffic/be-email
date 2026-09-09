@@ -47,12 +47,15 @@ export function PreviewModal({
   rows,
   g,
   renderHtml,
+  appUrl,
   onClose,
 }: {
   rows: Row[];
   g: GlobalSettings;
   /** Render del anfitrión: el editor no sabe generar el HTML de envío. */
   renderHtml: (design: EmailDesign) => Promise<string>;
+  /** URL canónica del anfitrión, reenviada a `EmailPreviewFrame`. Ver su doc. */
+  appUrl?: string;
   onClose: () => void;
 }) {
   const [mode, setMode] = useState<Device>("desktop");
@@ -163,7 +166,7 @@ export function PreviewModal({
           >
             {/* El HTML es el REAL de envío; el ancho del iframe dispara las @media
                 reales (apilado/tipografía móvil) → previsualización fiel. */}
-            <EmailPreviewFrame html={html} title={`Previsualización ${mode}`} renderWidth={renderWidth} minHeight={480} />
+            <EmailPreviewFrame html={html} title={`Previsualización ${mode}`} renderWidth={renderWidth} minHeight={480} appUrl={appUrl} />
           </div>
         )}
       </div>
