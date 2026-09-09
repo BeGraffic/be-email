@@ -464,7 +464,7 @@ describe("baseUrl for hosted images (preview vs send)", () => {
     expect(html).not.toContain("crm.begraffic.com");
   });
 
-  it("defaults to the canonical app URL when no baseUrl is given", async () => {
+  it("routes a titleImage block through the live text-image endpoint path", async () => {
     const html = await renderEmailHtmlFromDesign(design([rowWith([normalizeBlock({ type: "titleImage", text: "x" })])]), { baseUrl: "https://ejemplo.test" });
     expect(html).toContain("/api/email/text-image");
   });
